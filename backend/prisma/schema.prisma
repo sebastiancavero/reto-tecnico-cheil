@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique @db.NVarChar(100)
+  password  String    @db.VarChar(250)
+  isActive  Boolean   @default(true)
+  isDeleted Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  invoices  Invoice[]
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique @db.NVarChar(100)
+  isDeleted Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  name         String        @db.NVarChar(255)
+  description  String?       @db.NVarChar(500)
+  price        Decimal       @db.Decimal(10, 2)
+  stock        Int           @default(0)
+  imageUrl     String?       @db.NVarChar(500)
+  isDeleted    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categoryId   Int
+  category     Category      @relation(fields: [categoryId], references: [id])
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.NVarChar(150)
+  email     String    @db.NVarChar(200)
+  phone     String?   @db.NVarChar(20)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  invoices  Invoice[]
+}
+
+model Invoice {
+  id           Int           @id @default(autoincrement())
+  number       String        @unique @db.NVarChar(20)
+  total        Decimal       @db.Decimal(10, 2)
+  notes        String?       @db.NVarChar(500)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  customerId   Int
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  issuedById   Int
+  issuedBy     User          @relation(fields: [issuedById], references: [id])
+  items        InvoiceItem[]
+}
+
+model InvoiceItem {
+  id               Int      @id @default(autoincrement())
+  quantity         Int
+  unitPrice        Decimal  @db.Decimal(10, 2)
+  productName      String   @db.NVarChar(255)
+  productCategory  String   @db.NVarChar(100)
+  subtotal         Decimal  @db.Decimal(10, 2)
+  createdAt        DateTime @default(now())
+  invoiceId        Int
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  productId        Int?
+}
