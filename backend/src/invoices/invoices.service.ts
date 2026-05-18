@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SesService } from '../ses/ses.service';
 import { PdfService } from '../pdf/pdf.service';
@@ -25,12 +25,20 @@ export class InvoicesService {
     // Fetch products and validate
     const productIds = items.map((i) => i.productId);
     const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds }, isDeleted: false },
+      where: { id: { in: productIds }, isDeleted: false, stock: { gt: 0 } },
       include: { category: true },
     });
 
     if (products.length !== items.length) {
       throw new NotFoundException('Uno o más productos no encontrados');
+    }
+
+    // Validar stock disponible
+    for (const item of items) {
+      const product = products.find((p) => p.id === item.productId)!;
+      if (product.stock < item.quantity) {
+        throw new BadRequestException(`Stock insuficiente para "${product.name}". Disponible: ${product.stock}`);
+      }
     }
 
     // Build invoice items with snapshot
@@ -70,6 +78,16 @@ export class InvoicesService {
       },
       include: { customer: true, issuedBy: true, items: true },
     });
+
+    // Descontar stock
+    await Promise.all(
+      invoiceItems.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        }),
+      ),
+    );
 
     // Generate PDF
     const pdfBuffer = await this.pdf.generateInvoicePdf({
@@ -135,14 +153,14 @@ export class InvoicesService {
     );
 
     return {
-        id: invoice.id,
-        number: invoice.number,
-        total: invoice.total,
-        notes: invoice.notes,
-        createdAt: invoice.createdAt,
-        customer: invoice.customer,
-        issuedBy: { id: invoice.issuedBy.id, username: invoice.issuedBy.username },
-        items: invoice.items,
+      id: invoice.id,
+      number: invoice.number,
+      total: invoice.total,
+      notes: invoice.notes,
+      createdAt: invoice.createdAt,
+      customer: invoice.customer,
+      issuedBy: { id: invoice.issuedBy.id, username: invoice.issuedBy.username },
+      items: invoice.items,
     };
   }
 

@@ -1,8 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { AuthGuard } from '@nestjs/passport';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class CreateCategoryDto {
+  @IsNotEmpty({ message: 'El nombre es requerido' })
+  @IsString()
+  @MaxLength(100)
   name: string;
 }
 
@@ -27,7 +31,6 @@ export class CategoriesController {
   }
 
   @Put(':id')
-  // eslint-disable-next-line prettier/prettier
   update(@Param('id', ParseIntPipe) id: number, @Body() body: CreateCategoryDto) {
     return this.categoriesService.update(id, body.name);
   }

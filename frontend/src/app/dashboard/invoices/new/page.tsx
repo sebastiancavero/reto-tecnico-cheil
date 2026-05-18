@@ -7,6 +7,7 @@ interface Product {
   id: number;
   name: string;
   price: string;
+  stock: number;
   category: { name: string };
 }
 
@@ -27,7 +28,9 @@ export default function NewInvoicePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/products?page=1&limit=100').then((res) => setProducts(res.data.data)).catch(() => router.push('/'));
+    api.get('/products?page=1&limit=100')
+      .then((res) => setProducts(res.data.data.filter((p: Product) => p.stock > 0)))
+      .catch(() => router.push('/'));
   }, []);
 
   const addToCart = (product: Product) => {

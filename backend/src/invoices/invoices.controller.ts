@@ -2,11 +2,34 @@ import { Controller, Get, Post, Param, Body, ParseIntPipe, UseGuards, Res } from
 import { InvoicesService } from './invoices.service';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
+import { IsInt, IsOptional, IsString, IsArray, ValidateNested, Min, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class InvoiceItemDto {
+  @IsInt()
+  @Min(1)
+  productId: number;
+
+  @IsInt()
+  @Min(1, { message: 'La cantidad debe ser mayor a 0' })
+  quantity: number;
+}
 
 export class CreateInvoiceDto {
+  @IsInt()
   customerId: number;
+
+  @IsInt()
   issuedById: number;
-  items: { productId: number; quantity: number }[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InvoiceItemDto)
+  items: InvoiceItemDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   notes?: string;
 }
 

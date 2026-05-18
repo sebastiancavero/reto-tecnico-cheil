@@ -1,15 +1,38 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe, UseGuards, UseInterceptors, UploadedFile, UploadedFiles  } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ProductsService } from './products.service';
 import { S3Service } from '../s3/s3.service';
 import { AuthGuard } from '@nestjs/passport';
+import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateProductDto {
+  @IsNotEmpty({ message: 'El nombre es requerido' })
+  @IsString()
+  @MaxLength(255)
   name: string;
-  description: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
   price: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  @Type(() => Number)
+  @Min(0)
   stock: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  @Type(() => Number)
   categoryId: number;
 }
 
@@ -25,7 +48,7 @@ export class ProductsController {
   create(@Body() body: CreateProductDto) {
     return this.productsService.create(
       body.name,
-      body.description,
+      body.description!,
       body.price,
       body.stock,
       body.categoryId,
@@ -38,7 +61,6 @@ export class ProductsController {
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log('File recibido:', file);
     if (!file) throw new Error('No se recibió ningún archivo');
     const imageUrl = await this.s3Service.uploadFile(file);
     return this.productsService.updateImage(id, imageUrl);
@@ -62,7 +84,7 @@ export class ProductsController {
     return this.productsService.update(
       id,
       body.name,
-      body.description,
+      body.description!,
       body.price,
       body.stock,
       body.categoryId,
