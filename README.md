@@ -243,4 +243,4 @@ npm run dev
 
 ---
 
-Desarrollado por **Axel Cavero** — Reto Técnico Full Stack · Cheil Worldwide · 2026
+Desarrollado por **Sebastian Cavero** — Reto Técnico Full Stack · Cheil Worldwide · 2026
